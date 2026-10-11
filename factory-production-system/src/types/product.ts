@@ -1,22 +1,22 @@
-export type ProductStatus = 'BIG' | 'SMALL' | 'CONFIRM'
+export type ProductStatus = 'CONFIRMED' | 'NOT_CONFIRMED'
 
 export interface Product {
   id: string
-
   number: string
 
-  height: number
+  dirtyHeight: number
+  dirtyWidth: number
 
-  big: number
+  cleanHeight: number
+  cleanWidth: number
 
-  small: number
+  big: boolean
+  small: boolean
 
   status: ProductStatus
 
   machineId: string
-
   operatorId: string
-
   operatorName: string
 
   createdAt: string
@@ -25,11 +25,14 @@ export interface Product {
 export interface CreateProductInput {
   number: string
 
-  height: number
+  dirtyHeight: number
+  dirtyWidth: number
 
-  big: number
+  cleanHeight: number
+  cleanWidth: number
 
-  small: number
+  big: boolean
+  small: boolean
 
   status: ProductStatus
 }
