@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -23,19 +24,28 @@ import {
 
 import AddIcon from '@mui/icons-material/Add'
 
+import ProductForm from '@/components/forms/ProductsForm'
 import { useAuthStore } from '@/store/auth.store'
 import { useProductStore } from '@/store/product.store'
 import { machines } from '@/mocks/machines'
+import { CreateProductInput } from '@/types/product'
+
+type ProductFormData = Omit<CreateProductInput, 'number'>
 
 export default function OperatorPage() {
   const router = useRouter()
+
+  const [formOpen, setFormOpen] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const user = useAuthStore((state) => state.user)
   const machineId = useAuthStore((state) => state.machineId)
 
   const products = useProductStore((state) => state.products)
-  const loadProducts = useProductStore((state) => state.loadProducts)
   const loading = useProductStore((state) => state.loading)
+  const storeError = useProductStore((state) => state.error)
+  const loadProducts = useProductStore((state) => state.loadProducts)
+  const addProduct = useProductStore((state) => state.addProduct)
 
   useEffect(() => {
     if (!user || !machineId) {
@@ -52,6 +62,49 @@ export default function OperatorPage() {
 
   const machine = machines.find((item) => item.id === machineId)
 
+  const handleAddProduct = async (data: ProductFormData) => {
+    setFormError(null)
+
+    const measurements = [
+      data.dirtyHeight,
+      data.dirtyWidth,
+      data.cleanHeight,
+      data.cleanWidth,
+    ]
+
+    if (measurements.some((value) => !Number.isFinite(value) || value <= 0)) {
+      throw new Error('All measurements must be greater than zero.')
+    }
+
+    // Find the highest existing PRD number.
+    const highestNumber = products.reduce((highest, product) => {
+      const match = product.number.match(/^PRD-(\d+)$/)
+      const number = match ? Number(match[1]) : 0
+
+      return Math.max(highest, number)
+    }, 1000)
+
+    const nextNumber = `PRD-${String(highestNumber + 1).padStart(4, '0')}`
+
+    try {
+      await addProduct(
+        {
+          ...data,
+          number: nextNumber,
+        },
+        machineId,
+        user.id,
+        user.name,
+      )
+
+      setFormOpen(false)
+      setFormError(null)
+    } catch {
+      setFormError('Failed to add product. Please try again.')
+      throw new Error('Failed to add product')
+    }
+  }
+
   const formatTime = (date: string) =>
     new Date(date).toLocaleTimeString([], {
       hour: '2-digit',
@@ -61,17 +114,15 @@ export default function OperatorPage() {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Stack spacing={3}>
-        {/* Operator and machine header */}
+        {/* OPERATOR HEADER */}
         <Card>
           <CardContent>
             <div>
-              <Box>
-                <div>
-                  <h1>{machine?.name ?? 'Wrapping'}</h1>
+              <div>
+                <h1>{machine?.name ?? 'Wrapping'}</h1>
 
-                  <Chip label="ACTIVE" color="success" size="small" />
-                </div>
-              </Box>
+                <Chip label="ACTIVE" color="success" size="small" />
+              </div>
 
               <Box>
                 <h1>{user.name}</h1>
@@ -84,7 +135,7 @@ export default function OperatorPage() {
           </CardContent>
         </Card>
 
-        {/* Production table */}
+        {/* PRODUCTION */}
         <Card>
           <CardContent>
             <Stack spacing={3}>
@@ -95,12 +146,17 @@ export default function OperatorPage() {
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={() => {
-                    // We will connect ProductForm here next.
+                    setFormError(null)
+                    setFormOpen(true)
                   }}
                 >
                   Add Product
                 </Button>
               </div>
+
+              {formError && <Alert severity="error">{formError}</Alert>}
+
+              {storeError && <Alert severity="error">{storeError}</Alert>}
 
               <TableContainer>
                 <Table>
@@ -201,6 +257,14 @@ export default function OperatorPage() {
           </CardContent>
         </Card>
       </Stack>
+
+      {/* ADD PRODUCT MODAL */}
+      <ProductForm
+        open={formOpen}
+        loading={loading}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleAddProduct}
+      />
     </Container>
   )
 }
