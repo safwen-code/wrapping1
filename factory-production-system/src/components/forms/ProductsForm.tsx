@@ -1,170 +1,270 @@
 'use client'
 
+import { useState } from 'react'
+
 import {
-  Box,
   Button,
-  Card,
-  CardContent,
-  Chip,
-  Container,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Radio,
+  RadioGroup,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
+  TextField,
+  Box,
+  Divider,
+  Alert,
 } from '@mui/material'
 
-import AddIcon from '@mui/icons-material/Add'
+import { CreateProductInput, ProductStatus } from '@/types/product'
 
-const products = [
-  {
-    number: 'PRD001',
-    height: 378,
-    big: 380,
-    small: 255,
-    status: 'CONFIRM',
-    operator: 'Ahmed',
-    created: '06:15',
-  },
-  {
-    number: 'PRD002',
-    height: 377,
-    big: 379,
-    small: 256,
-    status: 'BIG',
-    operator: 'Ahmed',
-    created: '06:22',
-  },
-  {
-    number: 'PRD003',
-    height: 379,
-    big: 381,
-    small: 254,
-    status: 'SMALL',
-    operator: 'Ahmed',
-    created: '06:30',
-  },
-]
+type ProductFormData = Omit<CreateProductInput, 'number'>
 
-export default function OperatorPage() {
+interface ProductFormProps {
+  open: boolean
+  loading: boolean
+  onClose: () => void
+  onSubmit: (data: ProductFormData) => Promise<void>
+}
+
+const initialValues = {
+  dirtyHeight: '',
+  dirtyWidth: '',
+  cleanHeight: '',
+  cleanWidth: '',
+  big: false,
+  small: false,
+  status: 'CONFIRMED' as ProductStatus,
+}
+
+export default function ProductForm({
+  open,
+  loading,
+  onClose,
+  onSubmit,
+}: ProductFormProps) {
+  const [submitError, setSubmitError] = useState('')
+  const [dirtyHeight, setDirtyHeight] = useState('')
+  const [dirtyWidth, setDirtyWidth] = useState('')
+  const [cleanHeight, setCleanHeight] = useState('')
+  const [cleanWidth, setCleanWidth] = useState('')
+  const [big, setBig] = useState(false)
+  const [small, setSmall] = useState(false)
+  const [status, setStatus] = useState<ProductStatus>('CONFIRMED')
+
+  const resetForm = () => {
+    setDirtyHeight(initialValues.dirtyHeight)
+    setDirtyWidth(initialValues.dirtyWidth)
+    setCleanHeight(initialValues.cleanHeight)
+    setCleanWidth(initialValues.cleanWidth)
+    setBig(initialValues.big)
+    setSmall(initialValues.small)
+    setStatus(initialValues.status)
+    setSubmitError('')
+  }
+
+  const handleClose = () => {
+    if (loading) return
+
+    resetForm()
+    onClose()
+  }
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSubmitError('')
+
+    const measurements = [
+      Number(dirtyHeight),
+      Number(dirtyWidth),
+      Number(cleanHeight),
+      Number(cleanWidth),
+    ]
+
+    if (
+      [dirtyHeight, dirtyWidth, cleanHeight, cleanWidth].some(
+        (value) => value.trim() === '',
+      ) ||
+      measurements.some((value) => !Number.isFinite(value) || value <= 0)
+    ) {
+      setSubmitError('All four measurements must be greater than zero.')
+      return
+    }
+
+    try {
+      await onSubmit({
+        dirtyHeight: Number(dirtyHeight),
+        dirtyWidth: Number(dirtyWidth),
+        cleanHeight: Number(cleanHeight),
+        cleanWidth: Number(cleanWidth),
+        big,
+        small,
+        status,
+      })
+
+      resetForm()
+      setSubmitError('')
+    } catch {
+      setSubmitError('Could not add the product. Please try again.')
+    }
+  }
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Stack spacing={3}>
-        {/* OPERATOR HEADER */}
-        <Card>
-          <CardContent>
-            <div>
-              <Stack spacing={1}>
-                <div style={{ flex: 'row', alignItems: 'center' }}>
-                  <h1>Wrapping 1</h1>
+    <>
+      {submitError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {submitError}
+        </Alert>
+      )}
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>Add Product</DialogTitle>
 
-                  <Chip label="ACTIVE" color="success" size="small" />
-                </div>
-              </Stack>
-
-              <Box>
-                <h1>Ahmed</h1>
-
-                <Typography color="text.secondary">ID: op001</Typography>
-              </Box>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* PRODUCTION */}
-        <Card>
-          <CardContent>
-            <Stack spacing={3}>
-              {/* TITLE + BUTTON */}
-              <div
-                style={{
-                  flex: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+        <form onSubmit={handleSubmit}>
+          <DialogContent>
+            <Stack spacing={3} sx={{ pt: 1 }}>
+              {/* DIRTY SIDE */}
+              <Box
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 2,
                 }}
               >
-                <h1>Production</h1>
+                <h1>Dirty Side</h1>
 
-                <Button variant="contained" startIcon={<AddIcon />}>
-                  Add Product
-                </Button>
-              </div>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="Height"
+                    type="number"
+                    value={dirtyHeight}
+                    onChange={(e) => setDirtyHeight(e.target.value)}
+                    required
+                    fullWidth
+                    slotProps={{
+                      htmlInput: { min: 0, step: 'any' },
+                    }}
+                  />
 
-              {/* PRODUCTS TABLE */}
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>
-                        <strong>Number</strong>
-                      </TableCell>
+                  <TextField
+                    label="Width"
+                    type="number"
+                    value={dirtyWidth}
+                    onChange={(e) => setDirtyWidth(e.target.value)}
+                    required
+                    fullWidth
+                    slotProps={{
+                      htmlInput: { min: 0, step: 'any' },
+                    }}
+                  />
+                </Stack>
+              </Box>
 
-                      <TableCell>
-                        <strong>Height</strong>
-                      </TableCell>
+              {/* CLEAN SIDE */}
+              <Box
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  p: 2,
+                }}
+              >
+                <h1>Clean Side</h1>
 
-                      <TableCell>
-                        <strong>Big</strong>
-                      </TableCell>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="Height"
+                    type="number"
+                    value={cleanHeight}
+                    onChange={(e) => setCleanHeight(e.target.value)}
+                    required
+                    fullWidth
+                    slotProps={{
+                      htmlInput: { min: 0, step: 'any' },
+                    }}
+                  />
 
-                      <TableCell>
-                        <strong>Small</strong>
-                      </TableCell>
+                  <TextField
+                    label="Width"
+                    type="number"
+                    value={cleanWidth}
+                    onChange={(e) => setCleanWidth(e.target.value)}
+                    required
+                    fullWidth
+                    slotProps={{
+                      htmlInput: { min: 0, step: 'any' },
+                    }}
+                  />
+                </Stack>
+              </Box>
 
-                      <TableCell>
-                        <strong>Status</strong>
-                      </TableCell>
+              <Divider />
 
-                      <TableCell>
-                        <strong>Operator</strong>
-                      </TableCell>
+              {/* BIG / SMALL */}
+              <Box>
+                <h1>Product Type</h1>
 
-                      <TableCell>
-                        <strong>Created</strong>
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
+                <Stack direction="row" spacing={2}>
+                  <FormControlLabel
+                    label="Big"
+                    control={
+                      <Checkbox
+                        checked={big}
+                        onChange={(e) => setBig(e.target.checked)}
+                      />
+                    }
+                  />
 
-                  <TableBody>
-                    {products.map((product) => (
-                      <TableRow key={product.number} hover>
-                        <TableCell>{product.number}</TableCell>
+                  <FormControlLabel
+                    label="Small"
+                    control={
+                      <Checkbox
+                        checked={small}
+                        onChange={(e) => setSmall(e.target.checked)}
+                      />
+                    }
+                  />
+                </Stack>
+              </Box>
 
-                        <TableCell>{product.height}</TableCell>
+              {/* STATUS */}
+              <FormControl>
+                <FormLabel sx={{ fontWeight: 'bold', mb: 1 }}>Status</FormLabel>
 
-                        <TableCell>{product.big}</TableCell>
+                <RadioGroup
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as ProductStatus)}
+                >
+                  <FormControlLabel
+                    value="CONFIRMED"
+                    control={<Radio />}
+                    label="Confirm"
+                  />
 
-                        <TableCell>{product.small}</TableCell>
-
-                        <TableCell>
-                          <Chip
-                            label={product.status}
-                            size="small"
-                            color={
-                              product.status === 'CONFIRM'
-                                ? 'success'
-                                : product.status === 'BIG'
-                                ? 'warning'
-                                : 'error'
-                            }
-                          />
-                        </TableCell>
-
-                        <TableCell>{product.operator}</TableCell>
-
-                        <TableCell>{product.created}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                  <FormControlLabel
+                    value="NOT_CONFIRMED"
+                    control={<Radio />}
+                    label="Not Confirm"
+                  />
+                </RadioGroup>
+              </FormControl>
             </Stack>
-          </CardContent>
-        </Card>
-      </Stack>
-    </Container>
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button onClick={handleClose} disabled={loading}>
+              Cancel
+            </Button>
+
+            <Button type="submit" variant="contained" disabled={loading}>
+              {loading ? 'Adding...' : 'Add Product'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+    </>
   )
 }
