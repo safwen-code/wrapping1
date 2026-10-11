@@ -1,9 +1,9 @@
-import ProductForm from '@/components/forms/ProductsForm'
+import OperateurDash from '@/components/page/OperateurDash'
 
 export default function OperatorPage() {
   return (
     <main>
-      <ProductForm />
+      <OperateurDash />
     </main>
   )
 }
