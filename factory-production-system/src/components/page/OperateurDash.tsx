@@ -9,9 +9,13 @@ import {
   Button,
   Card,
   CardContent,
-  Checkbox,
   Chip,
   Container,
+  Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   Table,
   TableBody,
@@ -20,10 +24,6 @@ import {
   TableHead,
   TableRow,
   Typography,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
 } from '@mui/material'
 
 import type { ArticleMeasurement } from '@/types/article'
@@ -151,23 +151,55 @@ export default function OperatorPage() {
       <Stack spacing={3}>
         {/* OPERATOR HEADER */}
 
-        <Card>
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+          }}
+        >
           <CardContent>
-            <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem',
+              }}
+            >
               {/* MACHINE */}
-              <Box>
-                <h4>{machine?.name ?? 'Wrapping'}</h4>
+              <Stack spacing={1}>
+                <Typography variant="overline" color="text.secondary">
+                  Machine
+                </Typography>
 
-                <Chip
-                  label="ACTIVE"
-                  color="success"
-                  size="small"
-                  sx={{ mt: 1 }}
-                />
-              </Box>
+                <h6 style={{ fontWeight: 'bold' }}>
+                  {machine?.name ?? 'Wrapping'}
+                </h6>
+
+                <Box>
+                  <Chip
+                    label="ACTIVE"
+                    color="success"
+                    size="small"
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                </Box>
+              </Stack>
+
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ display: { xs: 'none', md: 'block' } }}
+              />
 
               {/* ARTICLE SELECT */}
-              <FormControl sx={{ width: { xs: '100%', md: 260 } }} size="small">
+              <FormControl
+                size="small"
+                sx={{
+                  width: '100%',
+                  maxWidth: { xs: '100%', md: 280 },
+                }}
+              >
                 <InputLabel id="article-reference-label">
                   Article Reference
                 </InputLabel>
@@ -187,104 +219,253 @@ export default function OperatorPage() {
                 </Select>
               </FormControl>
 
-              {/* OPERATOR */}
-              <Box>
-                <h4>{user.name}</h4>
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ display: { xs: 'none', md: 'block' } }}
+              />
 
-                <Typography color="text.secondary">
+              {/* OPERATOR */}
+              <Stack spacing={0.5}>
+                <Typography variant="overline" color="text.secondary">
+                  Operator
+                </Typography>
+
+                <h6 style={{ fontWeight: 'bold' }}>{user.name}</h6>
+
+                <Typography variant="body2" color="text.secondary">
                   ID: {user.operatorCode}
                 </Typography>
-              </Box>
+              </Stack>
             </div>
           </CardContent>
         </Card>
-
         {/* mesurement header */}
 
-        <Card>
+        {/* MEASUREMENT HEADER */}
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+          }}
+        >
           <CardContent>
-            <Stack spacing={2}>
-              <h6>Article Specifications</h6>
+            <Stack spacing={3}>
+              {/* SECTION TITLE */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box>
+                  <h6 style={{ fontWeight: 'bold' }}>Article Specifications</h6>
 
+                  <Typography variant="body2" color="text.secondary">
+                    Dimensions and production overview
+                  </Typography>
+                </Box>
+
+                {selectedArticle && (
+                  <Chip
+                    label={selectedArticle.reference}
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+              </div>
+
+              {/* PRODUCTION STATISTICS */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: 'repeat(2, minmax(0, 1fr))',
+                  },
+                  gap: 2,
+                }}
+              >
+                <Card
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: 'background.default',
+                  }}
+                >
+                  <CardContent>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Products
+                    </Typography>
+
+                    <Typography variant="h4" fontWeight="bold" sx={{ mt: 1 }}>
+                      {products.length}
+                    </Typography>
+
+                    <Typography variant="caption" color="text.secondary">
+                      Products loaded for this machine
+                    </Typography>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    bgcolor: 'warning.50',
+                    borderColor: 'warning.light',
+                  }}
+                >
+                  <CardContent>
+                    <Typography variant="body2" color="text.secondary">
+                      Not Conformed
+                    </Typography>
+
+                    <Typography
+                      variant="h4"
+                      fontWeight="bold"
+                      color="warning.dark"
+                      sx={{ mt: 1 }}
+                    >
+                      {
+                        products.filter(
+                          (product) => product.status === 'NOT_CONFIRMED',
+                        ).length
+                      }
+                    </Typography>
+
+                    <Typography variant="caption" color="text.secondary">
+                      Products requiring attention
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* ARTICLE DIMENSIONS */}
               {!selectedArticle ? (
                 <Alert severity="info">
                   Select an article reference to display its dimensions.
                 </Alert>
               ) : (
-                <>
-                  <h1>Reference: {selectedArticle.reference}</h1>
+                <Stack spacing={2}>
+                  <h6 style={{ fontWeight: 'bold' }}>
+                    Reference: {selectedArticle.reference}
+                  </h6>
 
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        md: 'repeat(2, minmax(0, 1fr))',
+                      },
+                      gap: 2,
+                    }}
+                  >
                     {/* DIRTY SIDE */}
                     <Box
                       sx={{
-                        flex: 1,
-                        p: 2,
+                        p: { xs: 2, sm: 2.5 },
                         border: 1,
                         borderColor: 'divider',
                         borderRadius: 2,
+                        minWidth: 0,
                       }}
                     >
-                      <h1>Dirty Side</h1>
+                      <h6 style={{ fontWeight: 'bold', marginBottom: '5px' }}>
+                        Dirty Side
+                      </h6>
 
-                      <Stack spacing={1}>
-                        <Typography>
-                          Height:{' '}
-                          {formatMeasurement(selectedArticle.dirtySide.height)}
-                        </Typography>
+                      <Stack spacing={2}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Height
+                          </Typography>
 
-                        <Typography color="text.secondary">
-                          Allowed range:{' '}
-                          {formatLimits(selectedArticle.dirtySide.height)}
-                        </Typography>
+                          <h6 style={{ fontWeight: 'medium' }}>
+                            {formatMeasurement(
+                              selectedArticle.dirtySide.height,
+                            )}
+                          </h6>
 
-                        <Typography>
-                          Width:{' '}
-                          {formatMeasurement(selectedArticle.dirtySide.width)}
-                        </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Allowed range:{' '}
+                            {formatLimits(selectedArticle.dirtySide.height)}
+                          </Typography>
+                        </Box>
 
-                        <Typography color="text.secondary">
-                          Allowed range:{' '}
-                          {formatLimits(selectedArticle.dirtySide.width)}
-                        </Typography>
+                        <Divider />
+
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Width
+                          </Typography>
+
+                          <h6 style={{ fontWeight: 'medium' }}>
+                            {formatMeasurement(selectedArticle.dirtySide.width)}
+                          </h6>
+
+                          <Typography variant="caption" color="text.secondary">
+                            Allowed range:{' '}
+                            {formatLimits(selectedArticle.dirtySide.width)}
+                          </Typography>
+                        </Box>
                       </Stack>
                     </Box>
 
                     {/* CLEAN SIDE */}
                     <Box
                       sx={{
-                        flex: 1,
-                        p: 2,
+                        p: { xs: 2, sm: 2.5 },
                         border: 1,
                         borderColor: 'divider',
                         borderRadius: 2,
+                        minWidth: 0,
                       }}
                     >
-                      <h1>Clean Side</h1>
+                      <h6 style={{ fontWeight: 'bold', marginBottom: '5px' }}>
+                        Clean Side
+                      </h6>
 
-                      <Stack spacing={1}>
-                        <Typography>
-                          Height:{' '}
-                          {formatMeasurement(selectedArticle.cleanSide.height)}
-                        </Typography>
+                      <Stack spacing={2}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Height
+                          </Typography>
 
-                        <Typography color="text.secondary">
-                          Allowed range:{' '}
-                          {formatLimits(selectedArticle.cleanSide.height)}
-                        </Typography>
+                          <h6 style={{ fontWeight: 'medium' }}>
+                            {formatMeasurement(
+                              selectedArticle.cleanSide.height,
+                            )}
+                          </h6>
 
-                        <Typography>
-                          Width:{' '}
-                          {formatMeasurement(selectedArticle.cleanSide.width)}
-                        </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Allowed range:{' '}
+                            {formatLimits(selectedArticle.cleanSide.height)}
+                          </Typography>
+                        </Box>
 
-                        <Typography color="text.secondary">
-                          Allowed range:{' '}
-                          {formatLimits(selectedArticle.cleanSide.width)}
-                        </Typography>
+                        <Divider />
+
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Width
+                          </Typography>
+
+                          <h6 style={{ fontWeight: 'medium' }}>
+                            {formatMeasurement(selectedArticle.cleanSide.width)}
+                          </h6>
+
+                          <Typography variant="caption" color="text.secondary">
+                            Allowed range:{' '}
+                            {formatLimits(selectedArticle.cleanSide.width)}
+                          </Typography>
+                        </Box>
                       </Stack>
                     </Box>
-                  </Stack>
+                  </Box>
 
                   {[
                     selectedArticle.dirtySide.height,
@@ -296,25 +477,41 @@ export default function OperatorPage() {
                       Some dimensions for this article are not configured yet.
                     </Alert>
                   )}
-                </>
+                </Stack>
               )}
             </Stack>
           </CardContent>
         </Card>
 
-        {/* PRODUCTION */}
+        {/* PRODUCTION header */}
         <Card>
           <CardContent>
             <Stack spacing={3}>
-              <div>
-                <h1>Production</h1>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-around',
+                }}
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <h5 style={{ fontWeight: 'bold' }}>Production</h5>
 
+                  <Typography variant="body2" color="text.secondary">
+                    Manage and monitor production products
+                  </Typography>
+                </Box>
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={() => {
                     setFormError(null)
                     setFormOpen(true)
+                  }}
+                  sx={{
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap',
+                    borderRadius: 2,
                   }}
                 >
                   Add Product
