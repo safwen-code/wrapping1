@@ -36,6 +36,8 @@ import { useAuthStore } from '@/store/auth.store'
 import { useProductStore } from '@/store/product.store'
 import { machines } from '@/mocks/machines'
 import { CreateProductInput } from '@/types/product'
+import { createProductionReportPdf } from '@/lib/production-report'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 
 type ProductFormData = Omit<CreateProductInput, 'number'>
 
@@ -53,6 +55,9 @@ export default function OperatorPage() {
   const storeError = useProductStore((state) => state.error)
   const loadProducts = useProductStore((state) => state.loadProducts)
   const addProduct = useProductStore((state) => state.addProduct)
+
+  //pdf error
+  const [exportError, setExportError] = useState<string | null>(null)
 
   //article mesurement
   const formatMeasurement = (measurement: ArticleMeasurement | null) => {
@@ -145,6 +150,65 @@ export default function OperatorPage() {
       hour: '2-digit',
       minute: '2-digit',
     })
+
+  //production report
+
+  const handleExportPdf = () => {
+    // 1. Check products
+    if (products.length === 0) {
+      setExportError('No products available to export.')
+      return
+    }
+
+    setExportError(null)
+
+    // 2. Prepare report data
+    const reportData = {
+      machineName: machine?.name ?? 'Wrapping',
+      machineId: machineId,
+
+      operatorName: user.name,
+      operatorRef: user.operatorCode,
+
+      articleRef: selectedArticle?.reference ?? '',
+
+      generatedAt: new Date().toLocaleString('en-GB'),
+
+      measurements: {
+        dirtyHeight: selectedArticle?.dirtySide.height ?? null,
+        dirtyWidth: selectedArticle?.dirtySide.width ?? null,
+        cleanHeight: selectedArticle?.cleanSide.height ?? null,
+        cleanWidth: selectedArticle?.cleanSide.width ?? null,
+      },
+
+      products: products.map((product) => ({
+        number: product.number,
+        dirtyHeight: product.dirtyHeight,
+        dirtyWidth: product.dirtyWidth,
+        cleanHeight: product.cleanHeight,
+        cleanWidth: product.cleanWidth,
+        big: product.big,
+        small: product.small,
+        status: product.status,
+        createdAt: product.createdAt,
+      })),
+    }
+
+    // 3. Generate PDF
+    const pdf = createProductionReportPdf(reportData)
+
+    // 4. Create a clean filename
+    const safeMachineName = (machine?.name ?? 'wrapping')
+      .replace(/[^a-z0-9-_]/gi, '-')
+      .toLowerCase()
+
+    const date = new Date().toISOString().slice(0, 10)
+
+    const fileName = `${safeMachineName}-${user.operatorCode}-${date}.pdf`
+
+    // 5. Download PDF
+    pdf.save(fileName)
+  }
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -515,6 +579,16 @@ export default function OperatorPage() {
                   }}
                 >
                   Add Product
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<PictureAsPdfIcon />}
+                  onClick={handleExportPdf}
+                  disabled={loading || products.length === 0}
+                >
+                  Export PDF
                 </Button>
               </div>
 
